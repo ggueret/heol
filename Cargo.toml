@@ -1,0 +1,36 @@
+[package]
+name = "heol"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Solar-synchronized lighting controller for plant grow lights"
+license = "MIT"
+authors = ["Geoffrey Guéret <geoffrey@zrq.dev>"]
+repository = "https://github.com/ggueret/heol.git"
+keywords = ["solar", "lighting", "grow-light", "raspberry-pi", "iot"]
+categories = ["embedded", "hardware-support"]
+
+[dependencies]
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+palette = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+solar-positioning = "0.5"
+thiserror = "2"
+tokio = { version = "1", features = ["rt", "macros", "time", "signal", "net", "sync", "io-util"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Optional backend deps
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true }
+
+[features]
+default = ["gpio", "deconz"]
+gpio = []
+deconz = ["dep:reqwest"]
+
+[dev-dependencies]
+tempfile = "3"
