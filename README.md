@@ -1,10 +1,13 @@
 # heol
 
-Solar-synchronized lighting controller for plant grow lights.
+Solar-synchronized lighting controller daemon.
 
 Heol ("sun" in Breton) is a daemon that calculates the sun's position and
-automatically adjusts your grow lights' brightness and color temperature
-throughout the day.
+automatically adjusts your lights' brightness and color temperature throughout
+the day, following natural circadian rhythms.
+
+Use it for grow lights, circadian lighting in poorly sunlit spaces, jet lag
+recovery, or anywhere you want light that follows the sun.
 
 ## Features
 

@@ -3,11 +3,11 @@ name = "heol"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
-description = "Solar-synchronized lighting controller for plant grow lights"
+description = "Solar-synchronized lighting controller daemon"
 license = "MIT"
 authors = ["Geoffrey Guéret <geoffrey@zrq.dev>"]
 repository = "https://github.com/ggueret/heol.git"
-keywords = ["solar", "lighting", "grow-light", "raspberry-pi", "iot"]
+keywords = ["solar", "lighting", "circadian", "raspberry-pi", "iot"]
 categories = ["embedded", "hardware-support"]
 
 [dependencies]
