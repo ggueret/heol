@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use async_trait::async_trait;
-use reqwest::Client;
+use super::LightBackend;
 use crate::config::{DeconzConnection, LightConfig};
 use crate::light::LightCommand;
-use super::LightBackend;
+use async_trait::async_trait;
+use reqwest::Client;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct DeconzClient {
     client: Client,
@@ -22,7 +22,8 @@ impl DeconzClient {
 
     async fn put_state(&self, path: &str, body: &str) -> anyhow::Result<()> {
         let url = format!("{}{}", self.base_url, path);
-        let resp = self.client
+        let resp = self
+            .client
             .put(&url)
             .header("Content-Type", "application/json")
             .body(body.to_string())
@@ -56,15 +57,25 @@ impl DeconzBackend {
 #[async_trait]
 impl LightBackend for DeconzBackend {
     async fn send(&self, light: &LightConfig, command: LightCommand) -> anyhow::Result<()> {
-        let profile = light.backend.split_once('.')
+        let profile = light
+            .backend
+            .split_once('.')
             .map(|(_, name)| name)
             .unwrap_or(&light.backend);
 
-        let client = self.clients.get(profile)
+        let client = self
+            .clients
+            .get(profile)
             .ok_or_else(|| anyhow::anyhow!("deconz profile '{}' not found", profile))?;
 
         match command {
-            LightCommand::DeconzState { light_id, group_id, on, bri, ct } => {
+            LightCommand::DeconzState {
+                light_id,
+                group_id,
+                on,
+                bri,
+                ct,
+            } => {
                 let payload = light_state_payload(on, bri, ct);
                 let path = if let Some(id) = light_id {
                     format!("/lights/{id}/state")
@@ -75,7 +86,13 @@ impl LightBackend for DeconzBackend {
                 };
                 client.put_state(&path, &payload).await?;
             }
-            LightCommand::DeconzRgb { light_id, group_id, on, bri, xy } => {
+            LightCommand::DeconzRgb {
+                light_id,
+                group_id,
+                on,
+                bri,
+                xy,
+            } => {
                 let payload = rgb_state_payload(on, bri, xy);
                 let path = if let Some(id) = light_id.or(group_id) {
                     if light_id.is_some() {
@@ -97,7 +114,11 @@ impl LightBackend for DeconzBackend {
     async fn healthcheck(&self) -> anyhow::Result<()> {
         for (name, client) in &self.clients {
             let url = format!("{}/config", client.base_url);
-            client.client.get(&url).send().await
+            client
+                .client
+                .get(&url)
+                .send()
+                .await
                 .map_err(|e| anyhow::anyhow!("deconz.{name}: healthcheck failed: {e}"))?;
         }
         Ok(())

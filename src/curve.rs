@@ -18,12 +18,36 @@ impl ColorCurve {
 
     pub fn builtin() -> Self {
         Self::new(vec![
-            ColorKeyframe { elevation: -6.0, temp: 2000, brightness: 0.02 },
-            ColorKeyframe { elevation: -1.0, temp: 2500, brightness: 0.15 },
-            ColorKeyframe { elevation: 0.0, temp: 3200, brightness: 0.35 },
-            ColorKeyframe { elevation: 5.0, temp: 4200, brightness: 0.60 },
-            ColorKeyframe { elevation: 15.0, temp: 5500, brightness: 0.85 },
-            ColorKeyframe { elevation: 30.0, temp: 6500, brightness: 1.0 },
+            ColorKeyframe {
+                elevation: -6.0,
+                temp: 2000,
+                brightness: 0.02,
+            },
+            ColorKeyframe {
+                elevation: -1.0,
+                temp: 2500,
+                brightness: 0.15,
+            },
+            ColorKeyframe {
+                elevation: 0.0,
+                temp: 3200,
+                brightness: 0.35,
+            },
+            ColorKeyframe {
+                elevation: 5.0,
+                temp: 4200,
+                brightness: 0.60,
+            },
+            ColorKeyframe {
+                elevation: 15.0,
+                temp: 5500,
+                brightness: 0.85,
+            },
+            ColorKeyframe {
+                elevation: 30.0,
+                temp: 6500,
+                brightness: 1.0,
+            },
         ])
     }
 
@@ -31,7 +55,10 @@ impl ColorCurve {
         let kf = &self.keyframes;
 
         if kf.is_empty() {
-            return TargetState { brightness: 0.0, color_temp_k: 4000.0 };
+            return TargetState {
+                brightness: 0.0,
+                color_temp_k: 4000.0,
+            };
         }
 
         // Clamp below

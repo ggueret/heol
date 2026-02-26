@@ -6,7 +6,8 @@ pub fn resolve_zone_target(
     global_curve: &ColorCurve,
     elevation: f64,
 ) -> TargetState {
-    let curve = zone.color_curve
+    let curve = zone
+        .color_curve
         .as_ref()
         .map(|kf| ColorCurve::new(kf.clone()))
         .unwrap_or_else(|| global_curve.clone());

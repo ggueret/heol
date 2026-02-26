@@ -1,12 +1,12 @@
+use super::LightBackend;
+use crate::config::{GpioConnection, LightConfig};
+use crate::light::LightCommand;
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use async_trait::async_trait;
-use crate::config::{GpioConnection, LightConfig};
-use crate::light::LightCommand;
-use super::LightBackend;
 
 const CMD_HP: u32 = 86; // Hardware PWM
 
@@ -19,7 +19,8 @@ impl GpioBackend {
         let mut connections = HashMap::new();
         for (name, conn) in profiles {
             let addr = format!("{}:{}", conn.host, conn.port);
-            let stream = TcpStream::connect(&addr).await
+            let stream = TcpStream::connect(&addr)
+                .await
                 .map_err(|e| anyhow::anyhow!("gpio.{name}: failed to connect to {addr}: {e}"))?;
             connections.insert(name.clone(), Arc::new(Mutex::new(stream)));
         }
@@ -45,11 +46,15 @@ impl GpioBackend {
 #[async_trait]
 impl LightBackend for GpioBackend {
     async fn send(&self, light: &LightConfig, command: LightCommand) -> anyhow::Result<()> {
-        let profile = light.backend.split_once('.')
+        let profile = light
+            .backend
+            .split_once('.')
             .map(|(_, name)| name)
             .unwrap_or(&light.backend);
 
-        let stream = self.connections.get(profile)
+        let stream = self
+            .connections
+            .get(profile)
             .ok_or_else(|| anyhow::anyhow!("gpio profile '{}' not connected", profile))?;
 
         let frequency = light.pwm_frequency.unwrap_or(10_000);
@@ -58,7 +63,12 @@ impl LightBackend for GpioBackend {
             LightCommand::GpioPwm { pin, duty } => {
                 Self::send_hp(stream, pin, frequency, duty).await?;
             }
-            LightCommand::GpioDualPwm { cold_pin, warm_pin, cold_duty, warm_duty } => {
+            LightCommand::GpioDualPwm {
+                cold_pin,
+                warm_pin,
+                cold_duty,
+                warm_duty,
+            } => {
                 Self::send_hp(stream, cold_pin, frequency, cold_duty).await?;
                 Self::send_hp(stream, warm_pin, frequency, warm_duty).await?;
             }
@@ -71,7 +81,8 @@ impl LightBackend for GpioBackend {
     async fn healthcheck(&self) -> anyhow::Result<()> {
         for (name, stream) in &self.connections {
             let stream = stream.lock().await;
-            let _ = stream.peer_addr()
+            let _ = stream
+                .peer_addr()
                 .map_err(|e| anyhow::anyhow!("gpio.{name}: connection check failed: {e}"))?;
         }
         Ok(())

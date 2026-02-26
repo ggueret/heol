@@ -1,7 +1,7 @@
 use heol::scheduler::Scheduler;
 use heol::solar::SolarEngine;
-use tokio::sync::watch;
 use std::time::Duration;
+use tokio::sync::watch;
 
 #[tokio::test]
 async fn scheduler_broadcasts_solar_state() {
@@ -16,8 +16,11 @@ async fn scheduler_broadcasts_solar_state() {
 
     handle.await.unwrap();
 
-    let state = rx.borrow().clone();
-    assert!(state.is_some(), "scheduler should have broadcast a SolarState");
+    let state = *rx.borrow();
+    assert!(
+        state.is_some(),
+        "scheduler should have broadcast a SolarState"
+    );
     let state = state.unwrap();
     // Should be a valid elevation for current time
     assert!(state.elevation > -90.0 && state.elevation < 90.0);

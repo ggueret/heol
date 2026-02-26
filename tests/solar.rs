@@ -37,5 +37,9 @@ fn azimuth_in_valid_range() {
     let engine = SolarEngine::new(48.8566, 2.3522, None);
     let dt = Utc.with_ymd_and_hms(2025, 6, 21, 12, 0, 0).unwrap();
     let state = engine.position(dt);
-    assert!(state.azimuth >= 0.0 && state.azimuth < 360.0, "azimuth was {}", state.azimuth);
+    assert!(
+        state.azimuth >= 0.0 && state.azimuth < 360.0,
+        "azimuth was {}",
+        state.azimuth
+    );
 }

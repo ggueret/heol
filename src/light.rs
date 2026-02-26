@@ -5,8 +5,16 @@ const MAX_GPIO_DUTY: u32 = 1_000_000;
 
 #[derive(Debug, Clone)]
 pub enum LightCommand {
-    GpioPwm { pin: u8, duty: u32 },
-    GpioDualPwm { cold_pin: u8, warm_pin: u8, cold_duty: u32, warm_duty: u32 },
+    GpioPwm {
+        pin: u8,
+        duty: u32,
+    },
+    GpioDualPwm {
+        cold_pin: u8,
+        warm_pin: u8,
+        cold_duty: u32,
+        warm_duty: u32,
+    },
     DeconzState {
         light_id: Option<u16>,
         group_id: Option<u16>,
@@ -38,22 +46,22 @@ pub fn adapt_light(
             let duty = (target.brightness * MAX_GPIO_DUTY as f64).round() as u32;
             LightCommand::GpioPwm { pin: 0, duty }
         }
-        (LightType::Mono { .. }, _) => {
-            LightCommand::DeconzState {
-                light_id: None,
-                group_id: None,
-                on,
-                bri,
-                ct: Some(kelvin_to_mireds(target.color_temp_k)),
-            }
-        }
-        (LightType::Dual { cold_temp, warm_temp }, "gpio") => {
-            let (cold_duty, warm_duty) = dual_gpio_duties(
-                target.brightness,
-                target.color_temp_k,
+        (LightType::Mono { .. }, _) => LightCommand::DeconzState {
+            light_id: None,
+            group_id: None,
+            on,
+            bri,
+            ct: Some(kelvin_to_mireds(target.color_temp_k)),
+        },
+        (
+            LightType::Dual {
                 cold_temp,
                 warm_temp,
-            );
+            },
+            "gpio",
+        ) => {
+            let (cold_duty, warm_duty) =
+                dual_gpio_duties(target.brightness, target.color_temp_k, cold_temp, warm_temp);
             LightCommand::GpioDualPwm {
                 cold_pin: 0,
                 warm_pin: 0,
@@ -61,15 +69,13 @@ pub fn adapt_light(
                 warm_duty,
             }
         }
-        (LightType::Dual { .. }, _) => {
-            LightCommand::DeconzState {
-                light_id: None,
-                group_id: None,
-                on,
-                bri,
-                ct: Some(kelvin_to_mireds(target.color_temp_k)),
-            }
-        }
+        (LightType::Dual { .. }, _) => LightCommand::DeconzState {
+            light_id: None,
+            group_id: None,
+            on,
+            bri,
+            ct: Some(kelvin_to_mireds(target.color_temp_k)),
+        },
         (LightType::Rgb, _) | (LightType::Wrgb { .. }, _) => {
             let xy = kelvin_to_cie_xy(target.color_temp_k);
             LightCommand::DeconzRgb {

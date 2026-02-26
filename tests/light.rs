@@ -1,10 +1,13 @@
 use heol::config::LightType;
 use heol::curve::TargetState;
-use heol::light::{adapt_light, LightCommand};
+use heol::light::{LightCommand, adapt_light};
 
 #[test]
 fn mono_ignores_color_temp() {
-    let target = TargetState { brightness: 0.85, color_temp_k: 5200.0 };
+    let target = TargetState {
+        brightness: 0.85,
+        color_temp_k: 5200.0,
+    };
     let cmd = adapt_light(LightType::Mono { temp: 4500 }, &target, "gpio");
     match cmd {
         LightCommand::GpioPwm { duty, .. } => {
@@ -17,11 +20,21 @@ fn mono_ignores_color_temp() {
 
 #[test]
 fn dual_gpio_interpolates_channels() {
-    let target = TargetState { brightness: 1.0, color_temp_k: 4600.0 };
-    let lt = LightType::Dual { cold_temp: 6500, warm_temp: 2700 };
+    let target = TargetState {
+        brightness: 1.0,
+        color_temp_k: 4600.0,
+    };
+    let lt = LightType::Dual {
+        cold_temp: 6500,
+        warm_temp: 2700,
+    };
     let cmd = adapt_light(lt, &target, "gpio");
     match cmd {
-        LightCommand::GpioDualPwm { cold_duty, warm_duty, .. } => {
+        LightCommand::GpioDualPwm {
+            cold_duty,
+            warm_duty,
+            ..
+        } => {
             // ratio = (4600 - 2700) / (6500 - 2700) = 1900 / 3800 = 0.5
             let total = cold_duty + warm_duty;
             assert!(total > 900_000, "total duty too low: {total}");
@@ -34,8 +47,14 @@ fn dual_gpio_interpolates_channels() {
 
 #[test]
 fn dual_deconz_converts_to_mireds() {
-    let target = TargetState { brightness: 0.5, color_temp_k: 4000.0 };
-    let lt = LightType::Dual { cold_temp: 6500, warm_temp: 2700 };
+    let target = TargetState {
+        brightness: 0.5,
+        color_temp_k: 4000.0,
+    };
+    let lt = LightType::Dual {
+        cold_temp: 6500,
+        warm_temp: 2700,
+    };
     let cmd = adapt_light(lt, &target, "deconz");
     match cmd {
         LightCommand::DeconzState { bri, ct, on, .. } => {
@@ -50,11 +69,21 @@ fn dual_deconz_converts_to_mireds() {
 #[test]
 fn dual_clamps_temp_to_range() {
     // Target temp below warm range
-    let target = TargetState { brightness: 1.0, color_temp_k: 1500.0 };
-    let lt = LightType::Dual { cold_temp: 6500, warm_temp: 2700 };
+    let target = TargetState {
+        brightness: 1.0,
+        color_temp_k: 1500.0,
+    };
+    let lt = LightType::Dual {
+        cold_temp: 6500,
+        warm_temp: 2700,
+    };
     let cmd = adapt_light(lt, &target, "gpio");
     match cmd {
-        LightCommand::GpioDualPwm { cold_duty, warm_duty, .. } => {
+        LightCommand::GpioDualPwm {
+            cold_duty,
+            warm_duty,
+            ..
+        } => {
             // Should be fully warm
             assert_eq!(cold_duty, 0);
             assert!(warm_duty > 900_000);
@@ -65,7 +94,10 @@ fn dual_clamps_temp_to_range() {
 
 #[test]
 fn zero_brightness_is_off() {
-    let target = TargetState { brightness: 0.0, color_temp_k: 5000.0 };
+    let target = TargetState {
+        brightness: 0.0,
+        color_temp_k: 5000.0,
+    };
     let cmd = adapt_light(LightType::Mono { temp: 4500 }, &target, "deconz");
     match cmd {
         LightCommand::DeconzState { on, bri, .. } => {
@@ -78,7 +110,10 @@ fn zero_brightness_is_off() {
 
 #[test]
 fn rgb_deconz_produces_xy() {
-    let target = TargetState { brightness: 0.8, color_temp_k: 5500.0 };
+    let target = TargetState {
+        brightness: 0.8,
+        color_temp_k: 5500.0,
+    };
     let cmd = adapt_light(LightType::Rgb, &target, "deconz");
     match cmd {
         LightCommand::DeconzRgb { bri, xy, on, .. } => {

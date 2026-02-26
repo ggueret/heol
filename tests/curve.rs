@@ -3,9 +3,21 @@ use heol::curve::ColorCurve;
 
 fn make_curve() -> ColorCurve {
     ColorCurve::new(vec![
-        ColorKeyframe { elevation: -6.0, temp: 2000, brightness: 0.02 },
-        ColorKeyframe { elevation: 0.0, temp: 3200, brightness: 0.35 },
-        ColorKeyframe { elevation: 30.0, temp: 6500, brightness: 1.0 },
+        ColorKeyframe {
+            elevation: -6.0,
+            temp: 2000,
+            brightness: 0.02,
+        },
+        ColorKeyframe {
+            elevation: 0.0,
+            temp: 3200,
+            brightness: 0.35,
+        },
+        ColorKeyframe {
+            elevation: 30.0,
+            temp: 6500,
+            brightness: 1.0,
+        },
     ])
 }
 

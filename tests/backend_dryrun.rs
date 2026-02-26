@@ -8,7 +8,9 @@ struct MockBackend {
 
 impl MockBackend {
     fn new() -> Self {
-        Self { calls: std::sync::Mutex::new(Vec::new()) }
+        Self {
+            calls: std::sync::Mutex::new(Vec::new()),
+        }
     }
 }
 
@@ -30,7 +32,10 @@ async fn dryrun_does_not_call_inner_send() {
     let dryrun = DryRunBackend::new(mock.clone());
 
     let light = dummy_light();
-    let cmd = LightCommand::GpioPwm { pin: 17, duty: 500000 };
+    let cmd = LightCommand::GpioPwm {
+        pin: 17,
+        duty: 500000,
+    };
     dryrun.send(&light, cmd).await.unwrap();
 
     assert!(mock.calls.lock().unwrap().is_empty());

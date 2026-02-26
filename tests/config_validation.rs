@@ -93,7 +93,10 @@ name = "z"
 "#;
     let config = Config::from_toml(toml_str).unwrap();
     let err = config.validate().unwrap_err();
-    assert!(err.to_string().contains("light_id or group_id"), "got: {err}");
+    assert!(
+        err.to_string().contains("light_id or group_id"),
+        "got: {err}"
+    );
 }
 
 #[test]

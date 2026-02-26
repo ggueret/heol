@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use solar_positioning::{spa, RefractionCorrection};
+use solar_positioning::{RefractionCorrection, spa};
 
 pub struct SolarEngine {
     latitude: f64,

@@ -1,6 +1,6 @@
 #[cfg(feature = "gpio")]
 mod tests {
-    use heol::backend::gpio::{encode_hardware_pwm, decode_response};
+    use heol::backend::gpio::{decode_response, encode_hardware_pwm};
 
     #[test]
     fn encode_hp_command() {
@@ -14,7 +14,10 @@ mod tests {
         // p3 = 4 (extension length)
         assert_eq!(u32::from_le_bytes(bytes[12..16].try_into().unwrap()), 4);
         // extension = dutycycle 500000
-        assert_eq!(u32::from_le_bytes(bytes[16..20].try_into().unwrap()), 500_000);
+        assert_eq!(
+            u32::from_le_bytes(bytes[16..20].try_into().unwrap()),
+            500_000
+        );
     }
 
     #[test]

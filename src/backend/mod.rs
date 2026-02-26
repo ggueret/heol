@@ -1,11 +1,11 @@
-#[cfg(feature = "gpio")]
-pub mod gpio;
 #[cfg(feature = "deconz")]
 pub mod deconz;
+#[cfg(feature = "gpio")]
+pub mod gpio;
 
-use async_trait::async_trait;
 use crate::config::LightConfig;
 use crate::light::LightCommand;
+use async_trait::async_trait;
 use std::sync::Arc;
 
 #[async_trait]

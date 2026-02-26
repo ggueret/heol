@@ -1,7 +1,7 @@
+use crate::solar::{SolarEngine, SolarState};
 use chrono::Utc;
 use std::time::Duration;
 use tokio::sync::watch;
-use crate::solar::{SolarEngine, SolarState};
 
 pub struct Scheduler {
     engine: SolarEngine,
@@ -15,7 +15,11 @@ impl Scheduler {
         tx: watch::Sender<Option<SolarState>>,
         interval: Duration,
     ) -> Self {
-        Self { engine, tx, interval }
+        Self {
+            engine,
+            tx,
+            interval,
+        }
     }
 
     /// Run a single tick: compute solar position and broadcast it.

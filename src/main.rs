@@ -1,21 +1,21 @@
+use clap::Parser;
+use heol::backend::DryRunBackend;
+use heol::backend::LightBackend;
+#[cfg(feature = "deconz")]
+use heol::backend::deconz::DeconzBackend;
+#[cfg(feature = "gpio")]
+use heol::backend::gpio::GpioBackend;
+use heol::config::{Config, LightType};
+use heol::curve::ColorCurve;
+use heol::light::adapt_light;
+use heol::scheduler::Scheduler;
+use heol::solar::SolarEngine;
+use heol::zone::resolve_zone_target;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use clap::Parser;
 use tokio::sync::watch;
 use tracing_subscriber::EnvFilter;
-use heol::config::{Config, LightType};
-use heol::curve::ColorCurve;
-use heol::solar::SolarEngine;
-use heol::scheduler::Scheduler;
-use heol::backend::LightBackend;
-#[cfg(feature = "gpio")]
-use heol::backend::gpio::GpioBackend;
-#[cfg(feature = "deconz")]
-use heol::backend::deconz::DeconzBackend;
-use heol::backend::DryRunBackend;
-use heol::zone::resolve_zone_target;
-use heol::light::adapt_light;
 
 #[derive(Parser)]
 #[command(name = "heol", about = "Solar-synchronized lighting controller")]
@@ -42,8 +42,7 @@ enum Command {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("heol=info"))
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("heol=info")),
         )
         .compact()
         .init();
@@ -51,7 +50,10 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Run { config: config_path, dry_run } => {
+        Command::Run {
+            config: config_path,
+            dry_run,
+        } => {
             run(config_path, dry_run).await?;
         }
     }
@@ -63,8 +65,7 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
     // Load config
     let config_str = std::fs::read_to_string(&config_path)
         .map_err(|e| anyhow::anyhow!("failed to read {}: {e}", config_path.display()))?;
-    let config = Config::from_toml(&config_str)?
-        .with_env_overrides();
+    let config = Config::from_toml(&config_str)?.with_env_overrides();
     config.validate()?;
     tracing::info!(config = %config_path.display(), "configuration loaded");
 
@@ -76,7 +77,8 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
     );
 
     // Build global color curve
-    let global_curve = config.color_curve
+    let global_curve = config
+        .color_curve
         .as_ref()
         .map(|kf| ColorCurve::new(kf.clone()))
         .unwrap_or_else(ColorCurve::builtin);
@@ -114,7 +116,9 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
     // Healthcheck all backends
     if !dry_run {
         for (name, backend) in &backends {
-            backend.healthcheck().await
+            backend
+                .healthcheck()
+                .await
                 .map_err(|e| anyhow::anyhow!("healthcheck failed for {name}: {e}"))?;
             tracing::info!(backend = %name, "healthcheck passed");
         }
@@ -194,7 +198,7 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
     // Handle signals
     #[cfg(unix)]
     {
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
         let mut sigterm = signal(SignalKind::terminate())?;
         let mut sighup = signal(SignalKind::hangup())?;
         let mut sigint = signal(SignalKind::interrupt())?;
@@ -231,13 +235,17 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
 
 fn parse_light_type(light: &heol::config::LightConfig) -> LightType {
     match light.light_type.as_str() {
-        "mono" => LightType::Mono { temp: light.temp.unwrap_or(4500) },
+        "mono" => LightType::Mono {
+            temp: light.temp.unwrap_or(4500),
+        },
         "dual" => LightType::Dual {
             cold_temp: light.cold_temp.unwrap_or(6500),
             warm_temp: light.warm_temp.unwrap_or(2700),
         },
         "rgb" => LightType::Rgb,
-        "wrgb" => LightType::Wrgb { white_temp: light.white_temp.unwrap_or(4000) },
+        "wrgb" => LightType::Wrgb {
+            white_temp: light.white_temp.unwrap_or(4000),
+        },
         _ => LightType::Mono { temp: 4500 },
     }
 }
@@ -252,7 +260,11 @@ fn fill_command(
             pin: light.pin.unwrap_or(0),
             duty,
         },
-        GpioDualPwm { cold_duty, warm_duty, .. } => GpioDualPwm {
+        GpioDualPwm {
+            cold_duty,
+            warm_duty,
+            ..
+        } => GpioDualPwm {
             cold_pin: light.cold_pin.unwrap_or(0),
             warm_pin: light.warm_pin.unwrap_or(0),
             cold_duty,

@@ -9,8 +9,16 @@ fn zone_uses_own_curve_when_present() {
         sunrise_offset: None,
         sunset_offset: None,
         color_curve: Some(vec![
-            ColorKeyframe { elevation: 0.0, temp: 3000, brightness: 0.5 },
-            ColorKeyframe { elevation: 30.0, temp: 5000, brightness: 1.0 },
+            ColorKeyframe {
+                elevation: 0.0,
+                temp: 3000,
+                brightness: 0.5,
+            },
+            ColorKeyframe {
+                elevation: 30.0,
+                temp: 5000,
+                brightness: 1.0,
+            },
         ]),
         light: vec![],
     };
