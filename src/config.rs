@@ -131,6 +131,39 @@ impl Config {
         Ok(toml::from_str(s)?)
     }
 
+    pub fn with_env_overrides(mut self) -> Self {
+        // Override GPIO connections
+        for (name, conn) in &mut self.backends.gpio {
+            let prefix = format!("HEOL_GPIO_{}", name.to_uppercase().replace('-', "_"));
+            if let Ok(v) = std::env::var(format!("{prefix}_HOST")) {
+                conn.host = v;
+            }
+            if let Ok(v) = std::env::var(format!("{prefix}_PORT")) {
+                if let Ok(p) = v.parse() {
+                    conn.port = p;
+                }
+            }
+        }
+
+        // Override deCONZ connections
+        for (name, conn) in &mut self.backends.deconz {
+            let prefix = format!("HEOL_DECONZ_{}", name.to_uppercase().replace('-', "_"));
+            if let Ok(v) = std::env::var(format!("{prefix}_HOST")) {
+                conn.host = v;
+            }
+            if let Ok(v) = std::env::var(format!("{prefix}_PORT")) {
+                if let Ok(p) = v.parse() {
+                    conn.port = p;
+                }
+            }
+            if let Ok(v) = std::env::var(format!("{prefix}_API_KEY")) {
+                conn.api_key = v;
+            }
+        }
+
+        self
+    }
+
     pub fn validate(&self) -> Result<(), ConfigError> {
         // Brightness range
         if !(0.0..=1.0).contains(&self.defaults.night_brightness) {
