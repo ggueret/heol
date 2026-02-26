@@ -146,7 +146,7 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
                 if rx.changed().await.is_err() {
                     break;
                 }
-                let solar_state = match rx.borrow().clone() {
+                let solar_state = match *rx.borrow() {
                     Some(s) => s,
                     None => continue,
                 };
