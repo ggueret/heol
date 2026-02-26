@@ -34,6 +34,24 @@ RUST_LOG=heol=debug heol run --dry-run
 
 See `heol.toml.example` for a complete example.
 
+## Development
+
+```bash
+make check   # fmt + clippy + tests
+make build   # release build
+```
+
+## Release
+
+Tag a version to trigger the CI release workflow, which builds binaries for
+Linux (x86_64, aarch64, armv7), macOS (x86_64, aarch64) and publishes a
+GitHub release with checksums:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## License
 
 MIT
