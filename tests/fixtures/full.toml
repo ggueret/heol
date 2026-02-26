@@ -1,0 +1,75 @@
+[location]
+latitude = 48.957145
+longitude = 2.880308
+elevation = 39
+
+[defaults]
+sunrise_offset = 0
+sunset_offset = 0
+night_brightness = 0.0
+interval = 10
+
+[backends.gpio.local]
+host = "localhost"
+port = 8888
+
+[backends.gpio.grow-room]
+host = "192.168.1.62"
+port = 8888
+
+[backends.deconz.home]
+host = "192.168.1.10"
+port = 80
+api_key = "CHANGE_ME"
+
+[[color_curve]]
+elevation = -6.0
+temp = 2000
+brightness = 0.02
+
+[[color_curve]]
+elevation = 0.0
+temp = 3200
+brightness = 0.35
+
+[[color_curve]]
+elevation = 30.0
+temp = 6500
+brightness = 1.0
+
+[[zone]]
+name = "étagère salon"
+
+  [[zone.light]]
+  name = "ruban dual"
+  type = "dual"
+  backend = "gpio.local"
+  cold_temp = 6500
+  warm_temp = 2700
+  cold_pin = 17
+  warm_pin = 27
+  pwm_frequency = 10000
+
+  [[zone.light]]
+  name = "spot mono"
+  type = "mono"
+  backend = "gpio.grow-room"
+  temp = 4500
+  pin = 12
+
+[[zone]]
+name = "bureau"
+sunrise_offset = -30
+
+  [[zone.light]]
+  name = "plafonnier"
+  type = "dual"
+  backend = "deconz.home"
+  light_id = 8
+
+  [[zone.light]]
+  name = "grow lights"
+  type = "mono"
+  backend = "deconz.home"
+  temp = 4000
+  group_id = 2

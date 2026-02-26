@@ -1,0 +1,20 @@
+[location]
+latitude = 48.957145
+longitude = 2.880308
+
+[defaults]
+interval = 10
+
+[[zone]]
+name = "test zone"
+
+  [[zone.light]]
+  name = "test light"
+  type = "mono"
+  backend = "gpio.local"
+  temp = 4500
+  pin = 17
+
+[backends.gpio.local]
+host = "localhost"
+port = 8888
