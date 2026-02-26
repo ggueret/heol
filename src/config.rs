@@ -80,7 +80,7 @@ fn default_deconz_port() -> u16 {
     80
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ZoneConfig {
     pub name: String,
     pub sunrise_offset: Option<i16>,
@@ -89,7 +89,7 @@ pub struct ZoneConfig {
     pub light: Vec<LightConfig>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct LightConfig {
     pub name: String,
     #[serde(rename = "type")]

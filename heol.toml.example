@@ -1,0 +1,102 @@
+# Geographic location for solar position calculations
+[location]
+latitude = 48.8566
+longitude = 2.3522
+elevation = 35
+
+# Global defaults (can be overridden per zone)
+[defaults]
+sunrise_offset = 0      # minutes before/after sunrise
+sunset_offset = 0       # minutes before/after sunset
+night_brightness = 0.0  # brightness when sun is below horizon
+interval = 10           # seconds between updates
+
+# GPIO backends (pigpiod)
+[backends.gpio.local]
+host = "localhost"
+port = 8888
+
+[backends.gpio.remote]
+host = "192.168.1.100"
+port = 8888
+
+# deCONZ backend (Zigbee gateway)
+[backends.deconz.home]
+host = "192.168.1.50"
+port = 80
+api_key = "YOUR_DECONZ_API_KEY"
+
+# Color curve: maps solar elevation to color temperature and brightness
+[[color_curve]]
+elevation = -6.0
+temp = 2000
+brightness = 0.02
+
+[[color_curve]]
+elevation = 0.0
+temp = 3200
+brightness = 0.35
+
+[[color_curve]]
+elevation = 30.0
+temp = 6500
+brightness = 1.0
+
+# Zones group lights that share the same schedule
+[[zone]]
+name = "living room"
+
+  # Dual-channel LED strip via local GPIO
+  [[zone.light]]
+  name = "led strip"
+  type = "dual"
+  backend = "gpio.local"
+  cold_temp = 6500
+  warm_temp = 2700
+  cold_pin = 17
+  warm_pin = 27
+  pwm_frequency = 10000
+
+  # Single-channel spot via remote GPIO
+  [[zone.light]]
+  name = "spot"
+  type = "mono"
+  backend = "gpio.remote"
+  temp = 4500
+  pin = 12
+  pwm_frequency = 1000
+  inverted = true  # for active-low LED drivers
+
+[[zone]]
+name = "office"
+sunrise_offset = -30  # start 30 min before sunrise
+
+  # Zigbee light via deCONZ
+  [[zone.light]]
+  name = "ceiling"
+  type = "dual"
+  backend = "deconz.home"
+  light_id = 8
+
+  # Zigbee group via deCONZ
+  [[zone.light]]
+  name = "desk lamps"
+  type = "mono"
+  backend = "deconz.home"
+  temp = 4000
+  group_id = 2
+
+  # RGB light via deCONZ (color via CIE xy)
+  [[zone.light]]
+  name = "rgb bulb"
+  type = "rgb"
+  backend = "deconz.home"
+  light_id = 3
+
+  # WRGB light via deCONZ (color + dedicated white channel)
+  [[zone.light]]
+  name = "wrgb strip"
+  type = "wrgb"
+  backend = "deconz.home"
+  white_temp = 4000
+  group_id = 5
