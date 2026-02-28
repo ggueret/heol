@@ -26,6 +26,9 @@ jobs:
           - target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest
             cross: true
+          - target: arm-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            cross: true
           - target: x86_64-apple-darwin
             os: macos-latest
           - target: aarch64-apple-darwin
