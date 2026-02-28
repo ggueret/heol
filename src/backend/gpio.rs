@@ -86,10 +86,18 @@ impl LightBackend for GpioBackend {
 
         let mut stream = stream.lock().await;
 
+        let invert = |duty: u32| -> u32 {
+            if light.inverted {
+                1_000_000 - duty
+            } else {
+                duty
+            }
+        };
+
         match command {
             LightCommand::GpioPwm { pin, duty } => {
                 self.ensure_pin_mode(profile, &mut stream, pin).await?;
-                Self::write_hp(&mut stream, pin, frequency, duty).await?;
+                Self::write_hp(&mut stream, pin, frequency, invert(duty)).await?;
             }
             LightCommand::GpioDualPwm {
                 cold_pin,
@@ -99,8 +107,8 @@ impl LightBackend for GpioBackend {
             } => {
                 self.ensure_pin_mode(profile, &mut stream, cold_pin).await?;
                 self.ensure_pin_mode(profile, &mut stream, warm_pin).await?;
-                Self::write_hp(&mut stream, cold_pin, frequency, cold_duty).await?;
-                Self::write_hp(&mut stream, warm_pin, frequency, warm_duty).await?;
+                Self::write_hp(&mut stream, cold_pin, frequency, invert(cold_duty)).await?;
+                Self::write_hp(&mut stream, warm_pin, frequency, invert(warm_duty)).await?;
             }
             _ => anyhow::bail!("gpio backend received non-gpio command"),
         }

@@ -61,6 +61,7 @@ fn dummy_light() -> LightConfig {
         cold_pin: None,
         warm_pin: None,
         pwm_frequency: None,
+        inverted: false,
         light_id: None,
         group_id: None,
     }
