@@ -105,6 +105,8 @@ pub struct LightConfig {
     pub cold_pin: Option<u8>,
     pub warm_pin: Option<u8>,
     pub pwm_frequency: Option<u32>,
+    #[serde(default)]
+    pub inverted: bool,
     // deCONZ-specific
     pub light_id: Option<u16>,
     pub group_id: Option<u16>,
