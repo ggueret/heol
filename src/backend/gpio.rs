@@ -8,10 +8,13 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
+const CMD_MODES: u32 = 0; // Set GPIO mode
 const CMD_HP: u32 = 86; // Hardware PWM
+const MODE_ALT5: u32 = 2; // ALT5 function (hardware PWM)
 
 pub struct GpioBackend {
     connections: HashMap<String, Arc<Mutex<TcpStream>>>,
+    initialized_pins: Arc<Mutex<std::collections::HashSet<(String, u8)>>>,
 }
 
 impl GpioBackend {
@@ -24,19 +27,41 @@ impl GpioBackend {
                 .map_err(|e| anyhow::anyhow!("gpio.{name}: failed to connect to {addr}: {e}"))?;
             connections.insert(name.clone(), Arc::new(Mutex::new(stream)));
         }
-        Ok(Self { connections })
+        Ok(Self {
+            connections,
+            initialized_pins: Arc::new(Mutex::new(std::collections::HashSet::new())),
+        })
     }
 
-    async fn send_hp(
-        stream: &Mutex<TcpStream>,
+    async fn ensure_pin_mode(
+        &self,
+        profile: &str,
+        stream: &mut TcpStream,
+        gpio: u8,
+    ) -> anyhow::Result<()> {
+        let key = (profile.to_string(), gpio);
+        let mut pins = self.initialized_pins.lock().await;
+        if pins.contains(&key) {
+            return Ok(());
+        }
+        let request = encode_set_mode(gpio as u32, MODE_ALT5);
+        stream.write_all(&request).await?;
+        let mut resp = [0u8; 16];
+        stream.read_exact(&mut resp).await?;
+        decode_response(&resp)?;
+        pins.insert(key);
+        tracing::debug!(profile, gpio, "pin initialized to ALT5");
+        Ok(())
+    }
+
+    async fn write_hp(
+        stream: &mut TcpStream,
         gpio: u8,
         frequency: u32,
         duty: u32,
     ) -> anyhow::Result<()> {
         let request = encode_hardware_pwm(gpio as u32, frequency, duty);
-        let mut stream = stream.lock().await;
         stream.write_all(&request).await?;
-
         let mut resp = [0u8; 16];
         stream.read_exact(&mut resp).await?;
         decode_response(&resp)
@@ -59,9 +84,12 @@ impl LightBackend for GpioBackend {
 
         let frequency = light.pwm_frequency.unwrap_or(10_000);
 
+        let mut stream = stream.lock().await;
+
         match command {
             LightCommand::GpioPwm { pin, duty } => {
-                Self::send_hp(stream, pin, frequency, duty).await?;
+                self.ensure_pin_mode(profile, &mut stream, pin).await?;
+                Self::write_hp(&mut stream, pin, frequency, duty).await?;
             }
             LightCommand::GpioDualPwm {
                 cold_pin,
@@ -69,8 +97,10 @@ impl LightBackend for GpioBackend {
                 cold_duty,
                 warm_duty,
             } => {
-                Self::send_hp(stream, cold_pin, frequency, cold_duty).await?;
-                Self::send_hp(stream, warm_pin, frequency, warm_duty).await?;
+                self.ensure_pin_mode(profile, &mut stream, cold_pin).await?;
+                self.ensure_pin_mode(profile, &mut stream, warm_pin).await?;
+                Self::write_hp(&mut stream, cold_pin, frequency, cold_duty).await?;
+                Self::write_hp(&mut stream, warm_pin, frequency, warm_duty).await?;
             }
             _ => anyhow::bail!("gpio backend received non-gpio command"),
         }
@@ -90,6 +120,15 @@ impl LightBackend for GpioBackend {
 }
 
 // --- Wire protocol functions (public for testing) ---
+
+pub fn encode_set_mode(gpio: u32, mode: u32) -> [u8; 16] {
+    let mut buf = [0u8; 16];
+    buf[0..4].copy_from_slice(&CMD_MODES.to_le_bytes());
+    buf[4..8].copy_from_slice(&gpio.to_le_bytes());
+    buf[8..12].copy_from_slice(&mode.to_le_bytes());
+    buf[12..16].copy_from_slice(&0u32.to_le_bytes());
+    buf
+}
 
 pub fn encode_hardware_pwm(gpio: u32, frequency: u32, dutycycle: u32) -> [u8; 20] {
     let mut buf = [0u8; 20];
