@@ -114,8 +114,8 @@ pub struct LightConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LightType {
-    Mono { temp: u16 },
-    Dual { cold_temp: u16, warm_temp: u16 },
+    Single { temp: u16 },
+    Cct { cold_temp: u16, warm_temp: u16 },
     Rgb,
     Wrgb { white_temp: u16 },
 }
@@ -236,18 +236,18 @@ impl Config {
 
     fn validate_gpio_light(&self, light: &LightConfig) -> Result<(), ConfigError> {
         match light.light_type.as_str() {
-            "mono" => {
+            "single" => {
                 if light.pin.is_none() {
                     return Err(ConfigError::Validation(format!(
-                        "light '{}': mono gpio requires pin",
+                        "light '{}': single gpio requires pin",
                         light.name
                     )));
                 }
             }
-            "dual" => {
+            "cct" => {
                 if light.cold_pin.is_none() || light.warm_pin.is_none() {
                     return Err(ConfigError::Validation(format!(
-                        "light '{}': dual gpio requires cold_pin and warm_pin",
+                        "light '{}': cct gpio requires cold_pin and warm_pin",
                         light.name
                     )));
                 }

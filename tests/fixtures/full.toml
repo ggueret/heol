@@ -42,7 +42,7 @@ name = "étagère salon"
 
   [[zone.light]]
   name = "ruban dual"
-  type = "dual"
+  type = "cct"
   backend = "gpio.local"
   cold_temp = 6500
   warm_temp = 2700
@@ -52,7 +52,7 @@ name = "étagère salon"
 
   [[zone.light]]
   name = "spot mono"
-  type = "mono"
+  type = "single"
   backend = "gpio.grow-room"
   temp = 4500
   pin = 12
@@ -63,13 +63,13 @@ sunrise_offset = -30
 
   [[zone.light]]
   name = "plafonnier"
-  type = "dual"
+  type = "cct"
   backend = "deconz.home"
   light_id = 8
 
   [[zone.light]]
   name = "grow lights"
-  type = "mono"
+  type = "single"
   backend = "deconz.home"
   temp = 4000
   group_id = 2
