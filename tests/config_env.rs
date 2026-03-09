@@ -16,7 +16,7 @@ api_key = "original"
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "deconz.home"
   temp = 4500
   light_id = 1
@@ -42,7 +42,7 @@ port = 8888
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "gpio.local"
   temp = 4500
   pin = 17

@@ -12,7 +12,7 @@ interval = 10
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "gpio.nonexistent"
   temp = 4500
   pin = 17
@@ -23,7 +23,7 @@ name = "z"
 }
 
 #[test]
-fn rejects_dual_gpio_missing_pins() {
+fn rejects_cct_gpio_missing_pins() {
     let toml_str = r#"
 [location]
 latitude = 48.0
@@ -37,7 +37,7 @@ port = 8888
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "dual"
+  type = "cct"
   backend = "gpio.local"
   cold_temp = 6500
   warm_temp = 2700
@@ -48,7 +48,7 @@ name = "z"
 }
 
 #[test]
-fn rejects_mono_gpio_missing_pin() {
+fn rejects_single_gpio_missing_pin() {
     let toml_str = r#"
 [location]
 latitude = 48.0
@@ -62,7 +62,7 @@ port = 8888
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "gpio.local"
   temp = 4500
 "#;
@@ -87,7 +87,7 @@ api_key = "test"
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "deconz.home"
   temp = 4500
 "#;
@@ -115,7 +115,7 @@ api_key = "test"
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "deconz.home"
   temp = 4500
   light_id = 1
@@ -146,7 +146,7 @@ brightness = 0.35
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "gpio.local"
   temp = 4500
   pin = 17
@@ -172,7 +172,7 @@ night_brightness = 1.5
 name = "z"
   [[zone.light]]
   name = "l"
-  type = "mono"
+  type = "single"
   backend = "gpio.local"
   temp = 4500
   pin = 17

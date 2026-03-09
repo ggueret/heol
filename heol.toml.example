@@ -46,10 +46,10 @@ brightness = 1.0
 [[zone]]
 name = "living room"
 
-  # Dual-channel LED strip via local GPIO
+  # CCT LED strip via local GPIO
   [[zone.light]]
   name = "led strip"
-  type = "dual"
+  type = "cct"
   backend = "gpio.local"
   cold_temp = 6500
   warm_temp = 2700
@@ -60,7 +60,7 @@ name = "living room"
   # Single-channel spot via remote GPIO
   [[zone.light]]
   name = "spot"
-  type = "mono"
+  type = "single"
   backend = "gpio.remote"
   temp = 4500
   pin = 12
@@ -74,14 +74,14 @@ sunrise_offset = -30  # start 30 min before sunrise
   # Zigbee light via deCONZ
   [[zone.light]]
   name = "ceiling"
-  type = "dual"
+  type = "cct"
   backend = "deconz.home"
   light_id = 8
 
   # Zigbee group via deCONZ
   [[zone.light]]
   name = "desk lamps"
-  type = "mono"
+  type = "single"
   backend = "deconz.home"
   temp = 4000
   group_id = 2
