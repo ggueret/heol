@@ -51,7 +51,7 @@ async fn dryrun_delegates_healthcheck() {
 fn dummy_light() -> LightConfig {
     LightConfig {
         name: "test".to_string(),
-        light_type: "mono".to_string(),
+        light_type: "single".to_string(),
         backend: "gpio.local".to_string(),
         temp: Some(4500),
         cold_temp: None,

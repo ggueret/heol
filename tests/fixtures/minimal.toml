@@ -10,7 +10,7 @@ name = "test zone"
 
   [[zone.light]]
   name = "test light"
-  type = "mono"
+  type = "single"
   backend = "gpio.local"
   temp = 4500
   pin = 17

@@ -42,11 +42,11 @@ pub fn adapt_light(
     let bri = (target.brightness * 255.0).round() as u8;
 
     match (light_type, backend_type) {
-        (LightType::Mono { .. }, "gpio") => {
+        (LightType::Single { .. }, "gpio") => {
             let duty = (target.brightness * MAX_GPIO_DUTY as f64).round() as u32;
             LightCommand::GpioPwm { pin: 0, duty }
         }
-        (LightType::Mono { .. }, _) => LightCommand::DeconzState {
+        (LightType::Single { .. }, _) => LightCommand::DeconzState {
             light_id: None,
             group_id: None,
             on,
@@ -54,7 +54,7 @@ pub fn adapt_light(
             ct: Some(kelvin_to_mireds(target.color_temp_k)),
         },
         (
-            LightType::Dual {
+            LightType::Cct {
                 cold_temp,
                 warm_temp,
             },
@@ -69,7 +69,7 @@ pub fn adapt_light(
                 warm_duty,
             }
         }
-        (LightType::Dual { .. }, _) => LightCommand::DeconzState {
+        (LightType::Cct { .. }, _) => LightCommand::DeconzState {
             light_id: None,
             group_id: None,
             on,

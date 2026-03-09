@@ -29,9 +29,9 @@ fn parse_full_config() {
     assert_eq!(config.zone[1].sunrise_offset, Some(-30));
 
     // Light types
-    let dual = &config.zone[0].light[0];
-    assert_eq!(dual.cold_temp, Some(6500));
-    assert_eq!(dual.warm_temp, Some(2700));
+    let cct = &config.zone[0].light[0];
+    assert_eq!(cct.cold_temp, Some(6500));
+    assert_eq!(cct.warm_temp, Some(2700));
 
     let deconz_light = &config.zone[1].light[0];
     assert_eq!(deconz_light.light_id, Some(8));

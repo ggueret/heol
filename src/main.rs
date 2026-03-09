@@ -235,10 +235,10 @@ async fn run(config_path: PathBuf, dry_run: bool) -> anyhow::Result<()> {
 
 fn parse_light_type(light: &heol::config::LightConfig) -> LightType {
     match light.light_type.as_str() {
-        "mono" => LightType::Mono {
+        "single" => LightType::Single {
             temp: light.temp.unwrap_or(4500),
         },
-        "dual" => LightType::Dual {
+        "cct" => LightType::Cct {
             cold_temp: light.cold_temp.unwrap_or(6500),
             warm_temp: light.warm_temp.unwrap_or(2700),
         },
@@ -246,7 +246,7 @@ fn parse_light_type(light: &heol::config::LightConfig) -> LightType {
         "wrgb" => LightType::Wrgb {
             white_temp: light.white_temp.unwrap_or(4000),
         },
-        _ => LightType::Mono { temp: 4500 },
+        _ => LightType::Single { temp: 4500 },
     }
 }
 

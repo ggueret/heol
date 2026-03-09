@@ -3,12 +3,12 @@ use heol::curve::TargetState;
 use heol::light::{LightCommand, adapt_light};
 
 #[test]
-fn mono_ignores_color_temp() {
+fn single_ignores_color_temp() {
     let target = TargetState {
         brightness: 0.85,
         color_temp_k: 5200.0,
     };
-    let cmd = adapt_light(LightType::Mono { temp: 4500 }, &target, "gpio");
+    let cmd = adapt_light(LightType::Single { temp: 4500 }, &target, "gpio");
     match cmd {
         LightCommand::GpioPwm { duty, .. } => {
             let expected = (0.85 * 1_000_000.0) as u32;
@@ -19,12 +19,12 @@ fn mono_ignores_color_temp() {
 }
 
 #[test]
-fn dual_gpio_interpolates_channels() {
+fn cct_gpio_interpolates_channels() {
     let target = TargetState {
         brightness: 1.0,
         color_temp_k: 4600.0,
     };
-    let lt = LightType::Dual {
+    let lt = LightType::Cct {
         cold_temp: 6500,
         warm_temp: 2700,
     };
@@ -46,12 +46,12 @@ fn dual_gpio_interpolates_channels() {
 }
 
 #[test]
-fn dual_deconz_converts_to_mireds() {
+fn cct_deconz_converts_to_mireds() {
     let target = TargetState {
         brightness: 0.5,
         color_temp_k: 4000.0,
     };
-    let lt = LightType::Dual {
+    let lt = LightType::Cct {
         cold_temp: 6500,
         warm_temp: 2700,
     };
@@ -67,13 +67,13 @@ fn dual_deconz_converts_to_mireds() {
 }
 
 #[test]
-fn dual_clamps_temp_to_range() {
+fn cct_clamps_temp_to_range() {
     // Target temp below warm range
     let target = TargetState {
         brightness: 1.0,
         color_temp_k: 1500.0,
     };
-    let lt = LightType::Dual {
+    let lt = LightType::Cct {
         cold_temp: 6500,
         warm_temp: 2700,
     };
@@ -98,7 +98,7 @@ fn zero_brightness_is_off() {
         brightness: 0.0,
         color_temp_k: 5000.0,
     };
-    let cmd = adapt_light(LightType::Mono { temp: 4500 }, &target, "deconz");
+    let cmd = adapt_light(LightType::Single { temp: 4500 }, &target, "deconz");
     match cmd {
         LightCommand::DeconzState { on, bri, .. } => {
             assert!(!on);
