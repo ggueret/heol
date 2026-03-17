@@ -71,14 +71,15 @@ jobs:
 
       - name: Package
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           cd target/${{ matrix.target }}/release
-          tar czf ../../../heol-${{ matrix.target }}.tar.gz heol
+          tar czf "../../../heol-${VERSION}-${{ matrix.target }}.tar.gz" heol
           cd ../../..
 
       - uses: actions/upload-artifact@v4
         with:
           name: heol-${{ matrix.target }}
-          path: heol-${{ matrix.target }}.tar.gz
+          path: heol-*.tar.gz
 
   release:
     name: Release
@@ -95,12 +96,12 @@ jobs:
       - name: Generate checksums
         run: |
           cd artifacts
-          sha256sum heol-*.tar.gz > SHA256SUMS
+          sha256sum *.tar.gz > SHA256SUMS
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            artifacts/heol-*.tar.gz
+            artifacts/*.tar.gz
             artifacts/SHA256SUMS
