@@ -1,6 +1,3 @@
 .worktrees/
-
-
-# Added by cargo
-
 /target
+heol.toml

@@ -167,6 +167,13 @@ impl Config {
     }
 
     pub fn validate(&self) -> Result<(), ConfigError> {
+        // Interval minimum
+        if self.defaults.interval == 0 {
+            return Err(ConfigError::Validation(
+                "defaults.interval must be greater than 0".into(),
+            ));
+        }
+
         // Brightness range
         if !(0.0..=1.0).contains(&self.defaults.night_brightness) {
             return Err(ConfigError::Validation(
@@ -196,6 +203,17 @@ impl Config {
     }
 
     fn validate_light(&self, light: &LightConfig) -> Result<(), ConfigError> {
+        // Reject unknown light types
+        match light.light_type.as_str() {
+            "single" | "cct" | "rgb" | "wrgb" => {}
+            other => {
+                return Err(ConfigError::Validation(format!(
+                    "light '{}': unknown type '{other}'",
+                    light.name
+                )));
+            }
+        }
+
         let (backend_type, profile_name) = light.backend.split_once('.').ok_or_else(|| {
             ConfigError::Validation(format!(
                 "light '{}': backend '{}' must be in 'type.name' format",
