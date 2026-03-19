@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "Solar-synchronized lighting controller daemon"
 license = "MIT"
+readme = "README.md"
 authors = ["Geoffrey Guéret <geoffrey@zrq.dev>"]
 repository = "https://github.com/ggueret/heol.git"
 keywords = ["solar", "lighting", "circadian", "raspberry-pi", "iot"]

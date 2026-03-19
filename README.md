@@ -38,6 +38,12 @@ tar xzf heol-*.tar.gz
 chmod +x heol
 ```
 
+### cargo install
+
+```bash
+cargo install heol
+```
+
 ### Build from source
 
 ```bash
