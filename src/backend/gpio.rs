@@ -3,6 +3,7 @@ use crate::config::{GpioConnection, LightConfig};
 use crate::light::LightCommand;
 use async_trait::async_trait;
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -12,8 +13,52 @@ const CMD_MODES: u32 = 0; // Set GPIO mode
 const CMD_HP: u32 = 86; // Hardware PWM
 const MODE_ALT5: u32 = 2; // ALT5 function (hardware PWM)
 
+struct ProfileConn {
+    addr: String,
+    stream: Mutex<TcpStream>,
+}
+
+impl ProfileConn {
+    async fn exchange(&self, request: &[u8]) -> anyhow::Result<[u8; 16]> {
+        let mut stream = self.stream.lock().await;
+        Self::try_exchange(&mut stream, request)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+
+    async fn try_exchange(stream: &mut TcpStream, request: &[u8]) -> std::io::Result<[u8; 16]> {
+        stream.write_all(request).await?;
+        let mut resp = [0u8; 16];
+        stream.read_exact(&mut resp).await?;
+        Ok(resp)
+    }
+
+    async fn reconnect(&self) -> anyhow::Result<()> {
+        let new_stream = TcpStream::connect(&self.addr)
+            .await
+            .map_err(|e| anyhow::anyhow!("reconnect to pigpiod {}: {e}", self.addr))?;
+        *self.stream.lock().await = new_stream;
+        Ok(())
+    }
+}
+
+fn is_transient(e: &std::io::Error) -> bool {
+    matches!(
+        e.kind(),
+        ErrorKind::BrokenPipe
+            | ErrorKind::ConnectionReset
+            | ErrorKind::ConnectionAborted
+            | ErrorKind::UnexpectedEof
+            | ErrorKind::NotConnected
+    )
+}
+
+fn is_transient_err(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<std::io::Error>().is_some_and(is_transient)
+}
+
 pub struct GpioBackend {
-    connections: HashMap<String, Arc<Mutex<TcpStream>>>,
+    connections: HashMap<String, Arc<ProfileConn>>,
     initialized_pins: Arc<Mutex<std::collections::HashSet<(String, u8)>>>,
 }
 
@@ -25,7 +70,13 @@ impl GpioBackend {
             let stream = TcpStream::connect(&addr)
                 .await
                 .map_err(|e| anyhow::anyhow!("gpio.{name}: failed to connect to {addr}: {e}"))?;
-            connections.insert(name.clone(), Arc::new(Mutex::new(stream)));
+            connections.insert(
+                name.clone(),
+                Arc::new(ProfileConn {
+                    addr,
+                    stream: Mutex::new(stream),
+                }),
+            );
         }
         Ok(Self {
             connections,
@@ -33,38 +84,111 @@ impl GpioBackend {
         })
     }
 
-    async fn ensure_pin_mode(
-        &self,
-        profile: &str,
-        stream: &mut TcpStream,
-        gpio: u8,
-    ) -> anyhow::Result<()> {
+    async fn ensure_pin_mode(&self, profile: &str, gpio: u8) -> anyhow::Result<()> {
         let key = (profile.to_string(), gpio);
-        let mut pins = self.initialized_pins.lock().await;
-        if pins.contains(&key) {
-            return Ok(());
+        {
+            let pins = self.initialized_pins.lock().await;
+            if pins.contains(&key) {
+                return Ok(());
+            }
         }
+        let conn = self
+            .connections
+            .get(profile)
+            .ok_or_else(|| anyhow::anyhow!("gpio profile '{}' not connected", profile))?;
         let request = encode_set_mode(gpio as u32, MODE_ALT5);
-        stream.write_all(&request).await?;
-        let mut resp = [0u8; 16];
-        stream.read_exact(&mut resp).await?;
+        let resp = conn.exchange(&request).await?;
         decode_response(&resp)?;
-        pins.insert(key);
+        self.initialized_pins.lock().await.insert(key);
         tracing::debug!(profile, gpio, "pin initialized to ALT5");
         Ok(())
     }
 
     async fn write_hp(
-        stream: &mut TcpStream,
+        &self,
+        profile: &str,
         gpio: u8,
         frequency: u32,
         duty: u32,
     ) -> anyhow::Result<()> {
+        let conn = self
+            .connections
+            .get(profile)
+            .ok_or_else(|| anyhow::anyhow!("gpio profile '{}' not connected", profile))?;
         let request = encode_hardware_pwm(gpio as u32, frequency, duty);
-        stream.write_all(&request).await?;
-        let mut resp = [0u8; 16];
-        stream.read_exact(&mut resp).await?;
+        let resp = conn.exchange(&request).await?;
         decode_response(&resp)
+    }
+
+    /// Reconnect a profile after a transient failure and forget its initialized
+    /// pins, since a restarted pigpiod has lost their ALT5 mode.
+    async fn reconnect(&self, profile: &str) -> anyhow::Result<()> {
+        let conn = self
+            .connections
+            .get(profile)
+            .ok_or_else(|| anyhow::anyhow!("gpio profile '{}' not connected", profile))?;
+        conn.reconnect().await?;
+        self.initialized_pins
+            .lock()
+            .await
+            .retain(|(p, _)| p != profile);
+        tracing::warn!(profile, "pigpiod connection lost, reconnected");
+        Ok(())
+    }
+
+    async fn dispatch(
+        &self,
+        profile: &str,
+        light: &LightConfig,
+        command: &LightCommand,
+    ) -> anyhow::Result<()> {
+        let frequency = light.pwm_frequency.unwrap_or(10_000);
+
+        let invert = |duty: u32| -> u32 {
+            if light.inverted {
+                1_000_000 - duty
+            } else {
+                duty
+            }
+        };
+
+        match command {
+            LightCommand::GpioPwm { pin, duty } => {
+                let (pin, duty) = (*pin, *duty);
+                let actual_duty = invert(duty);
+                tracing::debug!(light = %light.name, pin, duty, actual_duty, inverted = light.inverted, "gpio pwm");
+                self.ensure_pin_mode(profile, pin).await?;
+                self.write_hp(profile, pin, frequency, actual_duty).await?;
+            }
+            LightCommand::GpioDualPwm {
+                cold_pin,
+                warm_pin,
+                cold_duty,
+                warm_duty,
+            } => {
+                let (cold_pin, warm_pin) = (*cold_pin, *warm_pin);
+                let (cold_duty, warm_duty) = (*cold_duty, *warm_duty);
+                let actual_cold = invert(cold_duty);
+                let actual_warm = invert(warm_duty);
+                tracing::debug!(
+                    light = %light.name,
+                    cold_pin, warm_pin,
+                    cold_duty, warm_duty,
+                    actual_cold, actual_warm,
+                    inverted = light.inverted,
+                    "gpio dual pwm"
+                );
+                self.ensure_pin_mode(profile, cold_pin).await?;
+                self.ensure_pin_mode(profile, warm_pin).await?;
+                self.write_hp(profile, cold_pin, frequency, actual_cold)
+                    .await?;
+                self.write_hp(profile, warm_pin, frequency, actual_warm)
+                    .await?;
+            }
+            _ => anyhow::bail!("gpio backend received non-gpio command"),
+        }
+
+        Ok(())
     }
 }
 
@@ -77,60 +201,18 @@ impl LightBackend for GpioBackend {
             .map(|(_, name)| name)
             .unwrap_or(&light.backend);
 
-        let stream = self
-            .connections
-            .get(profile)
-            .ok_or_else(|| anyhow::anyhow!("gpio profile '{}' not connected", profile))?;
-
-        let frequency = light.pwm_frequency.unwrap_or(10_000);
-
-        let mut stream = stream.lock().await;
-
-        let invert = |duty: u32| -> u32 {
-            if light.inverted {
-                1_000_000 - duty
-            } else {
-                duty
+        match self.dispatch(profile, light, &command).await {
+            Err(e) if is_transient_err(&e) => {
+                self.reconnect(profile).await?;
+                self.dispatch(profile, light, &command).await
             }
-        };
-
-        match command {
-            LightCommand::GpioPwm { pin, duty } => {
-                let actual_duty = invert(duty);
-                tracing::debug!(light = %light.name, pin, duty, actual_duty, inverted = light.inverted, "gpio pwm");
-                self.ensure_pin_mode(profile, &mut stream, pin).await?;
-                Self::write_hp(&mut stream, pin, frequency, actual_duty).await?;
-            }
-            LightCommand::GpioDualPwm {
-                cold_pin,
-                warm_pin,
-                cold_duty,
-                warm_duty,
-            } => {
-                let actual_cold = invert(cold_duty);
-                let actual_warm = invert(warm_duty);
-                tracing::debug!(
-                    light = %light.name,
-                    cold_pin, warm_pin,
-                    cold_duty, warm_duty,
-                    actual_cold, actual_warm,
-                    inverted = light.inverted,
-                    "gpio dual pwm"
-                );
-                self.ensure_pin_mode(profile, &mut stream, cold_pin).await?;
-                self.ensure_pin_mode(profile, &mut stream, warm_pin).await?;
-                Self::write_hp(&mut stream, cold_pin, frequency, actual_cold).await?;
-                Self::write_hp(&mut stream, warm_pin, frequency, actual_warm).await?;
-            }
-            _ => anyhow::bail!("gpio backend received non-gpio command"),
+            result => result,
         }
-
-        Ok(())
     }
 
     async fn healthcheck(&self) -> anyhow::Result<()> {
-        for (name, stream) in &self.connections {
-            let stream = stream.lock().await;
+        for (name, conn) in &self.connections {
+            let stream = conn.stream.lock().await;
             let _ = stream
                 .peer_addr()
                 .map_err(|e| anyhow::anyhow!("gpio.{name}: connection check failed: {e}"))?;
