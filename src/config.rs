@@ -254,21 +254,17 @@ impl Config {
 
     fn validate_gpio_light(&self, light: &LightConfig) -> Result<(), ConfigError> {
         match light.light_type.as_str() {
-            "single" => {
-                if light.pin.is_none() {
-                    return Err(ConfigError::Validation(format!(
-                        "light '{}': single gpio requires pin",
-                        light.name
-                    )));
-                }
+            "single" if light.pin.is_none() => {
+                return Err(ConfigError::Validation(format!(
+                    "light '{}': single gpio requires pin",
+                    light.name
+                )));
             }
-            "cct" => {
-                if light.cold_pin.is_none() || light.warm_pin.is_none() {
-                    return Err(ConfigError::Validation(format!(
-                        "light '{}': cct gpio requires cold_pin and warm_pin",
-                        light.name
-                    )));
-                }
+            "cct" if light.cold_pin.is_none() || light.warm_pin.is_none() => {
+                return Err(ConfigError::Validation(format!(
+                    "light '{}': cct gpio requires cold_pin and warm_pin",
+                    light.name
+                )));
             }
             _ => {}
         }
