@@ -44,6 +44,12 @@ chmod +x heol
 cargo install heol
 ```
 
+### Docker
+
+```bash
+docker run -v ./heol.toml:/heol.toml ghcr.io/ggueret/heol
+```
+
 ### Build from source
 
 ```bash
