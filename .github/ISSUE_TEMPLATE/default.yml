@@ -1,0 +1,31 @@
+name: Issue
+description: Report a bug, suggest an improvement, or propose a change
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What is the problem or opportunity?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What happens if this is not addressed?
+    validations:
+      required: true
+  - type: textarea
+    id: action
+    attributes:
+      label: Action
+      description: What needs to be done?
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to docs, related issues, or relevant code
+    validations:
+      required: false
